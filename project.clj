@@ -7,4 +7,5 @@
                  [cheshire "5.5.0"]]
   :main ^:skip-aot mtg.core
   :target-path "target/%s"
+  ;;:repl-options {:init (clojure.main/repl :print pprint)}
   :profiles {:uberjar {:aot :all}})
