@@ -11,7 +11,12 @@
 ;;######################
 ;;# Generic Helper Functions
 ;;######################
+
 (def not-nil? (complement nil?))
+
+(defn print-card [c] (println (:name c) (:types c) (:manaCost c) "\n\t" (:text c) "\n"))
+
+(defn print-cards [cs] (doseq [c cs] (print-card c)))
 
 ;;######################
 ;;# Filter Functions
@@ -30,12 +35,37 @@
 (defn- cmc-test-builder
   [operator cmc]
   (fn [c] (operator cmc (:cmc c))))
-
 (defn cmc<  [cmc] (cmc-test-builder <  cmc))
 (defn cmc<= [cmc] (cmc-test-builder <= cmc))
 (defn cmc=  [cmc] (cmc-test-builder =  cmc))
 (defn cmc>  [cmc] (cmc-test-builder >  cmc))
 (defn cmc>= [cmc] (cmc-test-builder >= cmc))
+
+(defn- legal-builder [fmt]
+  (fn [c]
+    (= "Legal"
+       (-> (filter #(= (:format %) fmt) (:legalities c))
+           first
+           :legality))))
+(defn modern-legal?    [c] ((legal-builder "Modern")    c))
+(defn standard-legal?  [c] ((legal-builder "Standard")  c))
+(defn commander-legal? [c] ((legal-builder "Commander") c))
+(defn legacy-legal?    [c] ((legal-builder "Legacy")    c))
+(defn vintage-legal?   [c] ((legal-builder "Vintage")   c))
+
+(defn type-test-builder [type]
+  (fn [c] (not-nil? (some #(= type %) (:types c)))))
+(defn artifact?     [c] ((type-test-builder "Artifact")     c))
+(defn creature?     [c] ((type-test-builder "Creature")     c))
+(defn land?         [c] ((type-test-builder "Land")         c))
+(defn enchantment?  [c] ((type-test-builder "Enchantment")  c))
+(defn planeswalker? [c] ((type-test-builder "Planeswalker") c))
+(defn instant?      [c] ((type-test-builder "Instant")      c))
+(defn sorcery?      [c] ((type-test-builder "Sorcery")      c))
+(defn tribal?       [c] ((type-test-builder "Tribal")       c))
+
+(defn choose [cards & predicates]
+  (filter (apply every-pred predicates) cards))
 
 ;;######################
 ;;# Find Functions
@@ -49,13 +79,13 @@
 
 ((cmc< 3) (first cards))
 
-(take 10 (filter (cmc< 3) (take 10 cards)))
+(p (map :name (take 10 (filter (cmc= 3) cards))))
 
 (p (red? (first cards)))
 
 (red? (first cards))
 
-(p (map :name (take 10 (sort-by :name (filter red? cards)))))
+(print-cards (take 10 (sort-by :name (filter red? cards))))
 
 (filter #(= (:name %) "Ghostfire") (filter red? cards))
 
@@ -64,5 +94,12 @@
 
 ;; (p (map :name (take 10 (sort-by :name cards))))
 
-(p (find-by-name cards "Ghostfire"))
+(standard-legal? (find-by-name cards "Ghostfire"))
 
+(artifact? (find-by-name cards "Black Lotus"))
+
+(planeswalker? (find-by-name cards "Liliana of the Veil"))
+
+(print-cards (filter planeswalker? cards))
+
+(print-cards (choose cards (cmc= 4) red? planeswalker?))
