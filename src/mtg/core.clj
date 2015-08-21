@@ -30,11 +30,11 @@
   "Builder for black? red? green? white? and blue?."
   [color]
   (fn [c] (not-nil? (some #(= color %) (:colors c)))))
-(defn black? [c] ((color-test-builder "Black") c))
-(defn red?   [c] ((color-test-builder "Red")   c))
-(defn green? [c] ((color-test-builder "Green") c))
-(defn white? [c] ((color-test-builder "White") c))
-(defn blue?  [c] ((color-test-builder "Blue")  c))
+(def black? [c] (color-test-builder "Black"))
+(def red?   [c] (color-test-builder "Red"))
+(def green? [c] (color-test-builder "Green"))
+(def white? [c] (color-test-builder "White"))
+(def blue?  [c] (color-test-builder "Blue"))
 (def not-red?   (complement red?))
 (def not-green? (complement green?))
 (def not-white? (complement white?))
@@ -61,22 +61,22 @@
        (-> (filter #(= (:format %) fmt) (:legalities c))
            first
            :legality))))
-(defn modern-legal?    [c] ((legal-builder "Modern")    c))
-(defn standard-legal?  [c] ((legal-builder "Standard")  c))
-(defn commander-legal? [c] ((legal-builder "Commander") c))
-(defn legacy-legal?    [c] ((legal-builder "Legacy")    c))
-(defn vintage-legal?   [c] ((legal-builder "Vintage")   c))
+(def modern-legal?    (legal-builder "Modern"))
+(def standard-legal?  (legal-builder "Standard"))
+(def commander-legal? (legal-builder "Commander"))
+(def legacy-legal?    (legal-builder "Legacy"))
+(def vintage-legal?   (legal-builder "Vintage"))
 
 (defn type-test-builder [type]
   (fn [c] (not-nil? (some #(= type %) (:types c)))))
-(defn artifact?     [c] ((type-test-builder "Artifact")     c))
-(defn creature?     [c] ((type-test-builder "Creature")     c))
-(defn land?         [c] ((type-test-builder "Land")         c))
-(defn enchantment?  [c] ((type-test-builder "Enchantment")  c))
-(defn planeswalker? [c] ((type-test-builder "Planeswalker") c))
-(defn instant?      [c] ((type-test-builder "Instant")      c))
-(defn sorcery?      [c] ((type-test-builder "Sorcery")      c))
-(defn tribal?       [c] ((type-test-builder "Tribal")       c))
+(def artifact?     (type-test-builder "Artifact"))
+(def creature?     (type-test-builder "Creature"))
+(def land?         (type-test-builder "Land"))
+(def enchantment?  (type-test-builder "Enchantment"))
+(def planeswalker? (type-test-builder "Planeswalker"))
+(def instant?      (type-test-builder "Instant"))
+(def sorcery?      (type-test-builder "Sorcery"))
+(def tribal?       (type-test-builder "Tribal"))
 
 (defn has-text
   "Returns whether or not a card contains a regex expression. Ignores case."
