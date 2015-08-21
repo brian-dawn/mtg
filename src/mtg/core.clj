@@ -30,11 +30,11 @@
   "Builder for black? red? green? white? and blue?."
   [color]
   (fn [c] (not-nil? (some #(= color %) (:colors c)))))
-(def black? [c] (color-test-builder "Black"))
-(def red?   [c] (color-test-builder "Red"))
-(def green? [c] (color-test-builder "Green"))
-(def white? [c] (color-test-builder "White"))
-(def blue?  [c] (color-test-builder "Blue"))
+(def black? (color-test-builder "Black"))
+(def red?   (color-test-builder "Red"))
+(def green? (color-test-builder "Green"))
+(def white? (color-test-builder "White"))
+(def blue?  (color-test-builder "Blue"))
 (def not-red?   (complement red?))
 (def not-green? (complement green?))
 (def not-white? (complement white?))
