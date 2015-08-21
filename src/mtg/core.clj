@@ -40,7 +40,7 @@
     (let [card-cmc (:cmc c)]
       (if (nil? card-cmc)
         false
-        (operator cmc (:cmc c))))))
+        (operator (:cmc c) cmc)))))
 (defn cmc<  [cmc] (cmc-test-builder <  cmc))
 (defn cmc<= [cmc] (cmc-test-builder <= cmc))
 (defn cmc=  [cmc] (cmc-test-builder =  cmc))
@@ -110,4 +110,4 @@
 
 ;; (print-cards (choose cards (cmc> 4) red? creature?))
 
-(print-cards (choose cards (cmc< 8) red? creature?))
+(print-cards (choose cards (cmc> 8) red? creature?))
