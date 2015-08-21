@@ -6,7 +6,7 @@
 
 (def p clojure.pprint/pprint)
 
-(def cards (map second (parse-string (slurp "AllCards-x.json") true)))
+(def cards (sort-by :name (map second (parse-string (slurp "AllCards-x.json") true))))
 
 ;;######################
 ;;# Generic Helper Functions
@@ -20,7 +20,7 @@
 
 (defn print-cards [cs] (doseq [c cs] (print-card c)))
 
-(def un comp) ;; (un red?) sounds better than (comp red?)
+(def un complement) ;; (un red?) sounds better than (complement red?)
 
 ;;######################
 ;;# Filter Functions
@@ -143,4 +143,4 @@
 
 ;; ((has-text "apply") (first cards))
 
-(pchoose flample? not-red? blue?)
+(pchoose flample? (un creature?))
