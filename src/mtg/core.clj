@@ -16,11 +16,39 @@
 
 (defn format-text [text] (clojure.string/replace (str "\n" text) "\n" "\n\t"))
 
-(defn print-card [c] (println (:name c) (:types c) (:manaCost c) (format-text (:text c)) "\n"))
+(defn empty-string-if-nil [s]
+  (if (nil? s)
+    ""
+    s))
+
+(defn print-card [c] (println (:name c) (:types c) (:manaCost c)
+                              (str (empty-string-if-nil (:power c))
+                               "/" (empty-string-if-nil (:toughness c)))
+                               (format-text (:text c)) "\n"))
 
 (defn print-cards [cs] (doseq [c cs] (print-card c)))
 
 (def un complement) ;; (un red?) sounds better than (complement red?)
+
+
+;;######################
+;;# Attribute Readers
+;;######################
+(defn parse-mtg-numeric
+  "Coerce '1' to 1
+  '*' to 0
+  1  to 1
+          nil to 0"
+  [s]
+  (try (int (bigdec s))
+       (catch Exception e
+         0)))
+
+(defn power     [c] (parse-mtg-numeric (:power c)))
+(defn toughness [c] (parse-mtg-numeric (:toughness c)))
+(def cmc :cmc)
+(def name :name)
+(def mana-cost :manaCost)
 
 ;;######################
 ;;# Filter Functions
@@ -35,25 +63,46 @@
 (def green? (color-test-builder "Green"))
 (def white? (color-test-builder "White"))
 (def blue?  (color-test-builder "Blue"))
+
 (def not-red?   (complement red?))
 (def not-green? (complement green?))
 (def not-white? (complement white?))
 (def not-blue?  (complement blue?))
 (def not-black? (complement black?))
+
 (def colorless? (every-pred not-red? not-green? not-white? not-blue? not-black?))
 
-(defn- cmc-test-builder
-  [operator cmc]
+(def only-black? (every-pred not-red? not-green? not-white? not-blue? black?))
+(def only-red?   (every-pred red?     not-green? not-white? not-blue? not-black?))
+(def only-green? (every-pred not-red? green?     not-white? not-blue? not-black?))
+(def only-white? (every-pred not-red? not-green? white?     not-blue? not-black?))
+(def only-blue?  (every-pred not-red? not-green? not-white? blue?     not-black?))
+
+(defn- optional-operator-test-builder
+  "Used for the creation of comparison functions for numeric values."
+  [key operator val]
   (fn [c]
-    (let [card-cmc (:cmc c)]
-      (if (nil? card-cmc)
+    (let [card-val (key c)]
+      (if (nil? card-val)
         false
-        (operator (:cmc c) cmc)))))
-(defn cmc<  [cmc] (cmc-test-builder <  cmc))
-(defn cmc<= [cmc] (cmc-test-builder <= cmc))
-(defn cmc=  [cmc] (cmc-test-builder =  cmc))
-(defn cmc>  [cmc] (cmc-test-builder >  cmc))
-(defn cmc>= [cmc] (cmc-test-builder >= cmc))
+        (operator (parse-mtg-numeric card-val) val)))))
+(def cmc<  (partial optional-operator-test-builder :cmc <))
+(def cmc<= (partial optional-operator-test-builder :cmc <=))
+(def cmc=  (partial optional-operator-test-builder :cmc =))
+(def cmc>  (partial optional-operator-test-builder :cmc >))
+(def cmc>= (partial optional-operator-test-builder :cmc >=))
+
+(def power<  (partial optional-operator-test-builder :power <))
+(def power<= (partial optional-operator-test-builder :power <=))
+(def power=  (partial optional-operator-test-builder :power =))
+(def power>  (partial optional-operator-test-builder :power >))
+(def power>= (partial optional-operator-test-builder :power >=))
+
+(def toughness<  (partial optional-operator-test-builder :toughness <))
+(def toughness<= (partial optional-operator-test-builder :toughness <=))
+(def toughness=  (partial optional-operator-test-builder :toughness =))
+(def toughness>  (partial optional-operator-test-builder :toughness >))
+(def toughness>= (partial optional-operator-test-builder :toughness >=))
 
 (defn- legal-builder [fmt]
   (fn [c]
@@ -143,4 +192,12 @@
 
 ;; ((has-text "apply") (first cards))
 
-(pchoose flample? (un creature?))
+;; (pchoose flample? (un creature?))
+
+;; (pchoose flample? creature? black? not-red? not-green? not-white? not-blue?)
+
+;; (print-cards (sort-by :cmc (choose cards flample? creature? black? not-red? not-green? not-white? not-blue?)))
+
+(pchoose (cmc> 5) (power< 4) flample?)
+
+(cmc (second (choose cards creature?)))
