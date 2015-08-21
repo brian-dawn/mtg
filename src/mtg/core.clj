@@ -16,7 +16,7 @@
 
 (defn format-text [text] (clojure.string/replace (str "\n" text) "\n" "\n\t"))
 
-(defn print-card [c] (println (:name c) (:types c) (:manaCost c) (format-text (:text c))))
+(defn print-card [c] (println (:name c) (:types c) (:manaCost c) (format-text (:text c)) "\n"))
 
 (defn print-cards [cs] (doseq [c cs] (print-card c)))
 
@@ -83,31 +83,31 @@
 ;;# Examples
 ;;######################
 
-((cmc< 3) (first cards))
+;; ((cmc< 3) (first cards))
 
-(p (map :name (take 10 (filter (cmc= 3) cards))))
+;; (p (map :name (take 10 (filter (cmc= 3) cards))))
 
-(p (red? (first cards)))
+;; (p (red? (first cards)))
 
-(red? (first cards))
+;; (red? (first cards))
 
-(print-cards (take 10 (sort-by :name (filter red? cards))))
+;; (print-cards (take 10 (sort-by :name (filter red? cards))))
 
-(filter #(= (:name %) "Ghostfire") (filter red? cards))
+;; (filter #(= (:name %) "Ghostfire") (filter red? cards))
 
 
-(filter #(= (:name %) "Ghostfire") cards)
+;; (filter #(= (:name %) "Ghostfire") cards)
 
-;; (p (map :name (take 10 (sort-by :name cards))))
+;; ;; (p (map :name (take 10 (sort-by :name cards))))
 
-(standard-legal? (find-by-name cards "Ghostfire"))
+;; (standard-legal? (find-by-name cards "Ghostfire"))
 
-(artifact? (find-by-name cards "Black Lotus"))
+;; (artifact? (find-by-name cards "Black Lotus"))
 
-(planeswalker? (find-by-name cards "Liliana of the Veil"))
+;; (planeswalker? (find-by-name cards "Liliana of the Veil"))
 
-(print-cards (filter planeswalker? cards))
+;; (print-cards (filter planeswalker? cards))
 
-(print-cards (choose cards (cmc> 4) red? creature?))
+;; (print-cards (choose cards (cmc> 4) red? creature?))
 
-(print-cards (choose cards (cmc> 4)))
+(print-cards (choose cards (cmc< 8) red? creature?))
