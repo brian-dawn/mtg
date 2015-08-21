@@ -20,6 +20,8 @@
 
 (defn print-cards [cs] (doseq [c cs] (print-card c)))
 
+(def un comp) ;; (un red?) sounds better than (comp red?)
+
 ;;######################
 ;;# Filter Functions
 ;;######################
@@ -33,6 +35,12 @@
 (defn green? [c] ((color-test-builder "Green") c))
 (defn white? [c] ((color-test-builder "White") c))
 (defn blue?  [c] ((color-test-builder "Blue")  c))
+(def not-red?   (complement red?))
+(def not-green? (complement green?))
+(def not-white? (complement white?))
+(def not-blue?  (complement blue?))
+(def not-black? (complement black?))
+(def colorless? (every-pred not-red? not-green? not-white? not-blue? not-black?))
 
 (defn- cmc-test-builder
   [operator cmc]
@@ -70,12 +78,27 @@
 (defn sorcery?      [c] ((type-test-builder "Sorcery")      c))
 (defn tribal?       [c] ((type-test-builder "Tribal")       c))
 
-(defn choose [cards & predicates]
-  (filter (apply every-pred predicates) cards))
+(defn has-text
+  "Returns whether or not a card contains a regex expression. Ignores case."
+  [text]
+  (fn [c]
+    (let [txt (:text c)]
+      (if (nil? txt)
+        false
+        (not-nil? (re-find (re-pattern (clojure.string/lower-case text))
+                           (clojure.string/lower-case (:text c))))))))
+
+;; Useful compositions.
+(def flample? (every-pred (has-text "flying") (has-text "trample") creature?))
 
 ;;######################
 ;;# Find Functions
 ;;######################
+
+(defn choose [cards & predicates]
+  (filter (apply every-pred predicates) cards))
+
+(def pchoose (comp print-cards (partial choose cards)))
 
 (defn find-by-name [cs name] (first (filter #(= (:name %) name) cs)))
 
@@ -110,4 +133,14 @@
 
 ;; (print-cards (choose cards (cmc> 4) red? creature?))
 
-(print-cards (choose cards (cmc> 8) red? creature?))
+;; (pchoose (has-text "Suspend") (cmc> 9) red? creature?)
+
+;; (not-nil? (re-find (re-pattern "Suspend") "faskfjSuspend"))
+
+;; (pchoose (has-text "flying") (has-text "trample") (cmc> 2) red? creature?)
+
+;; (first cards)
+
+;; ((has-text "apply") (first cards))
+
+(pchoose flample? not-red? blue?)
