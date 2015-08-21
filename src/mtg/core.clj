@@ -23,7 +23,8 @@
 
 (defn print-card [c] (println (:name c) (:types c) (:manaCost c)
                               (str (empty-string-if-nil (:power c))
-                               "/" (empty-string-if-nil (:toughness c)))
+                                   (if (:power c) "/" "")
+                                   (empty-string-if-nil (:toughness c)))
                                (format-text (:text c)) "\n"))
 
 (defn print-cards [cs] (doseq [c cs] (print-card c)))
@@ -198,6 +199,6 @@
 
 ;; (print-cards (sort-by :cmc (choose cards flample? creature? black? not-red? not-green? not-white? not-blue?)))
 
-(pchoose (cmc> 5) (power< 4) flample?)
+;; (pchoose (cmc> 5) (power< 4) flample?)
 
-(cmc (second (choose cards creature?)))
+;; (cmc (second (choose cards creature?)))
