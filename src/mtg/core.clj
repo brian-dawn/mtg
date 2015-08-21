@@ -14,7 +14,9 @@
 
 (def not-nil? (complement nil?))
 
-(defn print-card [c] (println (:name c) (:types c) (:manaCost c) "\n\t" (:text c) "\n"))
+(defn format-text [text] (clojure.string/replace (str "\n" text) "\n" "\n\t"))
+
+(defn print-card [c] (println (:name c) (:types c) (:manaCost c) (format-text (:text c))))
 
 (defn print-cards [cs] (doseq [c cs] (print-card c)))
 
@@ -27,14 +29,18 @@
   [color]
   (fn [c] (not-nil? (some #(= color %) (:colors c)))))
 (defn black? [c] ((color-test-builder "Black") c))
-(defn red?   [c] ((color-test-builder "Red") c))
+(defn red?   [c] ((color-test-builder "Red")   c))
 (defn green? [c] ((color-test-builder "Green") c))
 (defn white? [c] ((color-test-builder "White") c))
-(defn blue?  [c] ((color-test-builder "Blue") c))
+(defn blue?  [c] ((color-test-builder "Blue")  c))
 
 (defn- cmc-test-builder
   [operator cmc]
-  (fn [c] (operator cmc (:cmc c))))
+  (fn [c]
+    (let [card-cmc (:cmc c)]
+      (if (nil? card-cmc)
+        false
+        (operator cmc (:cmc c))))))
 (defn cmc<  [cmc] (cmc-test-builder <  cmc))
 (defn cmc<= [cmc] (cmc-test-builder <= cmc))
 (defn cmc=  [cmc] (cmc-test-builder =  cmc))
@@ -102,4 +108,6 @@
 
 (print-cards (filter planeswalker? cards))
 
-(print-cards (choose cards (cmc= 4) red? planeswalker?))
+(print-cards (choose cards (cmc> 4) red? creature?))
+
+(print-cards (choose cards (cmc> 4)))
