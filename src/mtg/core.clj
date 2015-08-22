@@ -3,6 +3,19 @@
             [clojure.pprint :refer [pprint]])
   (:gen-class))
 
+;;######################
+;;# Main defs
+;;######################
+
+(def json-file "cards.json")
+(def download-location "http://mtgjson.com/json/AllCards-x.json")
+(defn copy-uri-to-file [uri file]
+  (with-open [in (clojure.java.io/input-stream uri)
+              out (clojure.java.io/output-stream file)]
+    (clojure.java.io/copy in out)))
+
+(when-not (.exists (clojure.java.io/as-file json-file))
+  (copy-uri-to-file download-location json-file))
 
 (def p clojure.pprint/pprint)
 
@@ -31,6 +44,11 @@
 
 (def un complement) ;; (un red?) sounds better than (complement red?)
 
+(defmacro defc [name body]
+  ;; TODO other smart stuff maybe
+  '(def ~name ~body)
+
+  )
 
 ;;######################
 ;;# Attribute Readers
@@ -54,16 +72,16 @@
 ;;######################
 ;;# Filter Functions
 ;;######################
+(defn- generic-test-builder
+  [field value]
+  (fn [c] (not-nil? (some #(= value %) (field c)))))
 
-(defn- color-test-builder
-  "Builder for black? red? green? white? and blue?."
-  [color]
-  (fn [c] (not-nil? (some #(= color %) (:colors c)))))
-(def black? (color-test-builder "Black"))
-(def red?   (color-test-builder "Red"))
-(def green? (color-test-builder "Green"))
-(def white? (color-test-builder "White"))
-(def blue?  (color-test-builder "Blue"))
+(def color= (partial generic-test-builder :colors))
+(def black? (color= "Black"))
+(def red?   (color= "Red"))
+(def green? (color= "Green"))
+(def white? (color= "White"))
+(def blue?  (color= "Blue"))
 
 (def not-red?   (complement red?))
 (def not-green? (complement green?))
@@ -105,28 +123,36 @@
 (def toughness>  (partial optional-operator-test-builder :toughness >))
 (def toughness>= (partial optional-operator-test-builder :toughness >=))
 
-(defn- legal-builder [fmt]
+(defn legal= [fmt]
   (fn [c]
     (= "Legal"
        (-> (filter #(= (:format %) fmt) (:legalities c))
            first
            :legality))))
-(def modern-legal?    (legal-builder "Modern"))
-(def standard-legal?  (legal-builder "Standard"))
-(def commander-legal? (legal-builder "Commander"))
-(def legacy-legal?    (legal-builder "Legacy"))
-(def vintage-legal?   (legal-builder "Vintage"))
+(def modern-legal?    (legal= "Modern"))
+(def standard-legal?  (legal= "Standard"))
+(def commander-legal? (legal= "Commander"))
+(def legacy-legal?    (legal= "Legacy"))
+(def vintage-legal?   (legal= "Vintage"))
 
-(defn type-test-builder [type]
-  (fn [c] (not-nil? (some #(= type %) (:types c)))))
-(def artifact?     (type-test-builder "Artifact"))
-(def creature?     (type-test-builder "Creature"))
-(def land?         (type-test-builder "Land"))
-(def enchantment?  (type-test-builder "Enchantment"))
-(def planeswalker? (type-test-builder "Planeswalker"))
-(def instant?      (type-test-builder "Instant"))
-(def sorcery?      (type-test-builder "Sorcery"))
-(def tribal?       (type-test-builder "Tribal"))
+(def type= (partial generic-test-builder :type))
+(def artifact?     (type= "Artifact"))
+(def creature?     (type= "Creature"))
+(def land?         (type= "Land"))
+(def enchantment?  (type= "Enchantment"))
+(def planeswalker? (type= "Planeswalker"))
+(def instant?      (type= "Instant"))
+(def sorcery?      (type= "Sorcery"))
+(def tribal?       (type= "Tribal"))
+
+(def supertype= (partial generic-test-builder :supertypes))
+(def legendary? (supertype= "Legendary"))
+(def snow?      (supertype= "Snow"))
+(def world?     (supertype= "World"))
+(def basic?     (supertype= "Basic"))
+
+(def subtype= (partial generic-test-builder :subtypes))
+(def angel?   (subtype= "Angel"))
 
 (defn has-text
   "Returns whether or not a card contains a regex expression. Ignores case."
