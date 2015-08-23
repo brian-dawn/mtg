@@ -1,5 +1,6 @@
 (ns mtg.core
   (:require [cheshire.core :refer :all]
+            [clj-fuzzy.metrics :refer [levenshtein]]
             [clojure.pprint :refer [pprint]])
   (:gen-class))
 
@@ -177,6 +178,66 @@
 (def pchoose (comp print-cards (partial choose cards)))
 
 (defn find-by-name [cs name] (first (filter #(= (:name %) name) cs)))
+
+;;######################
+;;# Fuzzy Finder
+;;######################
+
+;; {:a {:b {}}}
+;; To optmize levenshtein we're going to use trees to cache letters where the key is a letter
+;; and the value is the children.
+
+(use 'clojure.test)
+
+(defn visit
+  "(visit {:a {:b {:c :HELLO}}} [:a :b :c]) == :HELLO
+  if key hits a nil value we return nil."
+  [hm trail]
+  (if (empty? trail)
+    hm
+    (let [val (get hm (first trail))]
+      (if (nil? val)
+        nil
+        (recur val (rest trail))))))
+
+(is (visit {:a {:b true}} [:a :b]))
+(is (nil? (visit {:a {:b {:c {}}}} [:a :b :d])))
+
+(defn build-cache [words]
+  (loop [cache {}
+         words words]
+    (if (empty? words)
+      cache
+      (let [word-seq (seq (first words))]
+        (if (nil? (visit cache word-seq))
+          (recur (assoc-in cache word-seq {}) (rest words))
+          (recur cache (rest words)))))))
+
+(is (= {\f {\o {\o {}, \b {}}, \b {\a {\r {}}}}}
+       (build-cache ["foo" "fbar" "fob" "f"])))
+
+(time
+ (do (build-cache (map clojure.string/lower-case (map :name cards)))
+     nil))
+
+
+
+
+
+(defn add-fuzzy-attribute
+  "Adds a field to a card that is the fuzzyness of the card by name."
+  [name c] (assoc c :fuzzy (levenshtein name
+                                        ;; We don't want to compare akr to akroma, angel of wrath
+                                        ;; as that distance will be high, so lets only compare
+                                        ;; similar lengthed strings.
+                                        (.substring (:name c) 0 (min (.length name)
+                                                                     (.length (:name c)))))))
+
+
+(defn find-by-name-fuzzy [cs name] (take 5 (sort-by :fuzzy (pmap (partial add-fuzzy-attribute name) cards))))
+
+;; TODO if we have typed akr then only match against the first 3 characters of each name
+(time (print-cards (find-by-name-fuzzy cards "akroma angel")))
 
 ;;######################
 ;;# Examples
