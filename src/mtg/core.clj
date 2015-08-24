@@ -180,89 +180,42 @@
 (defn find-by-name [cs name] (first (filter #(= (:name %) name) cs)))
 
 ;;######################
-;;# Fuzzy Finder
+;;# Fuzzy Functions
 ;;######################
-
-;; {:a {:b {}}}
-;; To optmize levenshtein we're going to use trees to cache letters where the key is a letter
-;; and the value is the children.
 
 (use 'clojure.test)
 
-(defn visit
-  "(visit {:a {:b {:c :HELLO}}} [:a :b :c]) == :HELLO
-  if key hits a nil value we return nil."
-  [hm trail]
-  (if (empty? trail)
-    hm
-    (let [val (get hm (first trail))]
-      (if (nil? val)
-        nil
-        (recur val (rest trail))))))
+(defn build-re [s]
+  (re-pattern (apply str ".*" (interleave s (repeat ".*")))))
 
-(is (visit {:a {:b true}} [:a :b]))
-(is (nil? (visit {:a {:b {:c {}}}} [:a :b :d])))
+(is (= ".*z.*g.*" (str (build-re "zg"))))
 
-(defn build-cache [words]
-  (loop [cache {}
-         words words]
-    (if (empty? words)
-      cache
-      (let [word     (first words)
-            word-seq (seq word)]
-        (if (nil? (visit cache word-seq))
-          ;; Some piece of the path is missing, fill it in.
-          (recur (assoc-in cache
-                           word-seq
-                           {:word word})
-                 (rest words))
-          ;; Path exists, updated the :word field at the
-          ;; end and go to the next word.
-          (recur (assoc-in cache
-                           (concat word-seq [:word])
-                           word)
-                 (rest words)))))))
+(defn match-strength
+  "How strongly does the partial guess match up with the actual?
+  Just returns negative the number of letters that are the same."
+  [a b]
+  (- (count (filter #(= (first %) (second %)) (map vector a b)))))
 
-(is (= {\f {:word "f" \o {\o {:word "foo"}, \b {:word "fob"}}, \b {\a {\r {:word "fbar"}}}}}
-       (build-cache ["foo" "fbar" "fob" "f"])))
+(defn fuzzy [cs partial-name]
+  (let [re (build-re partial-name)]
+    (sort-by #(match-strength partial-name (:name %))
+             (filter #(re-matches re (:name %)) cs))))
 
-(def cache (build-cache (map clojure.string/lower-case (map :name cards))))
 
-(defn remaining-words [node]
-  (keep :word (tree-seq #(or (map? %) (vector? %)) identity node)))
 
-(defn find [cache partial-name]
-  (let [name-seq (seq partial-name)
-        node (visit cache name-seq)]
-    (remaining-words node)
-    ))
+
+(print-cards (fuzzy cards "Sabic"))
+
+;; Lets build a regex up
+;; zg -> Zameck Guildmage -> z.*g
+;; za -> should expand into things.
+;; zguildmage
+
 
 (time
- (find cache "za"))
-
-(time
- (find-by-name-p cards "Zameck Guildmage")
+ (print-cards (find-by-name-p cards "Za"))
  )
 
-
-(defn find-by-name [cs name] (filter #(=
-                                       (.substring (:name %) 0 (.length name))
-                                       name) cs))
-
-(defn add-fuzzy-attribute
-  "Adds a field to a card that is the fuzzyness of the card by name."
-  [name c] (assoc c :fuzzy (levenshtein name
-                                        ;; We don't want to compare akr to akroma, angel of wrath
-                                        ;; as that distance will be high, so lets only compare
-                                        ;; similar lengthed strings.
-                                        (.substring (:name c) 0 (min (.length name)
-                                                                     (.length (:name c)))))))
-
-
-(defn find-by-name-fuzzy [cs name] (take 5 (sort-by :fuzzy (pmap (partial add-fuzzy-attribute name) cards))))
-
-;; TODO if we have typed akr then only match against the first 3 characters of each name
-;;(time (print-cards (find-by-name-fuzzy cards "akroma angel")))
 
 ;;######################
 ;;# Examples
