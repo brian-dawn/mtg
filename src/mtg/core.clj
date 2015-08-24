@@ -228,60 +228,26 @@
 
 (def cache (build-cache (map clojure.string/lower-case (map :name cards))))
 
+(defn remaining-words [node]
+  (keep :word (tree-seq #(or (map? %) (vector? %)) identity node)))
 
-(defn searchr [node letter word previous-row results max-cost]
-  (let [columns (inc (.length word))
-        current-row [(inc (first previous-row))]]
-        (for [column (range 1 columns)]
-          (let [insert-cost (inc (get current-row (dec column)))
-                delete-cost (inc (get previous-row column))
-                replace-cost (if (not= letter (dec column))
-                               (inc (get previous-row (dec column)))
-                               (get previous-row (dec column)))
-                new-current-row (concat current-row [(min insert-cost delete-cost replace-cost)])
-                new-results (if (and (<= (last new-current-row) max-cost)
-                                     (not (nil? (:word node))))
-                              (concat results [[(:word node) (last new-current-row)]])
-                              results)]
-            (if (<= (min new-current-row) max-cost)
-              (map (fn [letter] (searchr
-                                 (get letter node)
-                                 letter
-                                 word
-                                 new-current-row
-                                 new-results
-                                 max-cost))
-                   (keys node)))))))
+(defn find [cache partial-name]
+  (let [name-seq (seq partial-name)
+        node (visit cache name-seq)]
+    (remaining-words node)
+    ))
+
+(time
+ (find cache "za"))
+
+(time
+ (find-by-name-p cards "Zameck Guildmage")
+ )
 
 
-(defn search [word max-cost cache]
-  (let [current-row (range (inc (.length word)))]
-    (map (fn [letter] (searchr
-                       (get letter cache)
-                       letter
-                       word
-                       current-row
-                       []
-                       max-cost))
-         (keys cache))))
-
-
-(defn levenshtein [str1 str2]
-  (let [len1 (count str1)
-        len2 (count str2)]
-    (cond (zero? len1) len2
-          (zero? len2) len1
-          :else
-          (let [cost (if (= (first str1) (first str2)) 0 1)]
-            (min (inc (levenshtein (rest str1) str2))
-                 (inc (levenshtein str1 (rest str2)))
-                 (+ cost
-                    (levenshtein (rest str1) (rest str2))))))))
-
-(use 'clojure.tools.trace)
-(trace
- (search "AKROMA" 20 cache))
-
+(defn find-by-name [cs name] (filter #(=
+                                       (.substring (:name %) 0 (.length name))
+                                       name) cs))
 
 (defn add-fuzzy-attribute
   "Adds a field to a card that is the fuzzyness of the card by name."
@@ -296,7 +262,7 @@
 (defn find-by-name-fuzzy [cs name] (take 5 (sort-by :fuzzy (pmap (partial add-fuzzy-attribute name) cards))))
 
 ;; TODO if we have typed akr then only match against the first 3 characters of each name
-(time (print-cards (find-by-name-fuzzy cards "akroma angel")))
+;;(time (print-cards (find-by-name-fuzzy cards "akroma angel")))
 
 ;;######################
 ;;# Examples
