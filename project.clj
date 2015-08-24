@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [clj-fuzzy "0.3.1"]
                  ;;[clojurewerkz/elastisch "2.2.0-beta4"] LAWL OVERKILL!!!
+                 [org.clojure/tools.trace "0.7.8"]
                  [cheshire "5.5.0"]]
   :main ^:skip-aot mtg.core
   :target-path "target/%s"

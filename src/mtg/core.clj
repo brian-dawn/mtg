@@ -208,20 +208,79 @@
          words words]
     (if (empty? words)
       cache
-      (let [word-seq (seq (first words))]
+      (let [word     (first words)
+            word-seq (seq word)]
         (if (nil? (visit cache word-seq))
-          (recur (assoc-in cache word-seq {}) (rest words))
-          (recur cache (rest words)))))))
+          ;; Some piece of the path is missing, fill it in.
+          (recur (assoc-in cache
+                           word-seq
+                           {:word word})
+                 (rest words))
+          ;; Path exists, updated the :word field at the
+          ;; end and go to the next word.
+          (recur (assoc-in cache
+                           (concat word-seq [:word])
+                           word)
+                 (rest words)))))))
 
-(is (= {\f {\o {\o {}, \b {}}, \b {\a {\r {}}}}}
+(is (= {\f {:word "f" \o {\o {:word "foo"}, \b {:word "fob"}}, \b {\a {\r {:word "fbar"}}}}}
        (build-cache ["foo" "fbar" "fob" "f"])))
 
-(time
- (do (build-cache (map clojure.string/lower-case (map :name cards)))
-     nil))
+(def cache (build-cache (map clojure.string/lower-case (map :name cards))))
 
 
+(defn searchr [node letter word previous-row results max-cost]
+  (let [columns (inc (.length word))
+        current-row [(inc (first previous-row))]]
+        (for [column (range 1 columns)]
+          (let [insert-cost (inc (get current-row (dec column)))
+                delete-cost (inc (get previous-row column))
+                replace-cost (if (not= letter (dec column))
+                               (inc (get previous-row (dec column)))
+                               (get previous-row (dec column)))
+                new-current-row (concat current-row [(min insert-cost delete-cost replace-cost)])
+                new-results (if (and (<= (last new-current-row) max-cost)
+                                     (not (nil? (:word node))))
+                              (concat results [[(:word node) (last new-current-row)]])
+                              results)]
+            (if (<= (min new-current-row) max-cost)
+              (map (fn [letter] (searchr
+                                 (get letter node)
+                                 letter
+                                 word
+                                 new-current-row
+                                 new-results
+                                 max-cost))
+                   (keys node)))))))
 
+
+(defn search [word max-cost cache]
+  (let [current-row (range (inc (.length word)))]
+    (map (fn [letter] (searchr
+                       (get letter cache)
+                       letter
+                       word
+                       current-row
+                       []
+                       max-cost))
+         (keys cache))))
+
+
+(defn levenshtein [str1 str2]
+  (let [len1 (count str1)
+        len2 (count str2)]
+    (cond (zero? len1) len2
+          (zero? len2) len1
+          :else
+          (let [cost (if (= (first str1) (first str2)) 0 1)]
+            (min (inc (levenshtein (rest str1) str2))
+                 (inc (levenshtein str1 (rest str2)))
+                 (+ cost
+                    (levenshtein (rest str1) (rest str2))))))))
+
+(use 'clojure.tools.trace)
+(trace
+ (search "AKROMA" 20 cache))
 
 
 (defn add-fuzzy-attribute
